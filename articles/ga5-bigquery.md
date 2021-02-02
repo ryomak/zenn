@@ -8,8 +8,8 @@ published: true
 
 ## TL;DR
 - Googleアナリティクス4から有料版の360を利用せずに、アクセスログをBigQueryに転送できるようになった
-- Googleアナリティクス4のデータを元にBigQueryデータ分析をしてみた
-- 経路別のユーザ登録数を出してみる
+- Googleアナリティクス4のデータを元にBigQueryデータ分析をする時の手順をまとめました
+- 実際に経路別のユーザ登録数を出してみました
 
 ## Google アナリティクス4とは
 2019年に発表された「アプリ＋ウェブ プロパティ」が、2020年10月から正式にリリースされた新しいプロパティです。
@@ -73,7 +73,7 @@ https://qiita.com/fuku_tech/items/1c0a1d1d1e59cd188e2f
 2. GA4からBigQueryへのデータエキスポート設定
 3. BigQueryでクエリ実行
 
-### GA4導入
+### GA4をLPに設置
 https://support.google.com/tagmanager/answer/9442095?hl=ja
 
 わかりやすい記事があったので、こちらを参照すると良いと思います。
