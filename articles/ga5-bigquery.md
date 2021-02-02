@@ -1,19 +1,20 @@
 ---
-title: "GA4が出たので、アクセス履歴を元にBigQueryでデータ分析してみた"
+title: "Googleアナリティクス4が出たので、アクセス履歴を元にBigQueryでデータ分析してみた"
 emoji: "🐝"
 type: "tech" 
 topics: ["BigQuery","GoogleAnalytics","ga4"]
-published: false
+published: true
 ---
 
 ## TL;DR
-- Google Analytics4から有料版の360を利用せずに、アクセスログをBigQueryに転送できるようになった
-- Google Analytics4のデータを元にBigQueryデータ分析をしてみた
+- Googleアナリティクス4から有料版の360を利用せずに、アクセスログをBigQueryに転送できるようになった
+- Googleアナリティクス4のデータを元にBigQueryデータ分析をしてみた
 - 経路別のユーザ登録数を出してみる
 
-## Google Analytics4とは
+## Google アナリティクス4とは
 2019年に発表された「アプリ＋ウェブ プロパティ」が、2020年10月から正式にリリースされた新しいプロパティです。
 https://support.google.com/analytics/answer/10089681
+以下GA4とする
 
 ### 特徴
 - ページビューや発火イベントなどを全て「イベント」として、管理される
@@ -21,7 +22,7 @@ https://support.google.com/analytics/answer/10089681
 - 無料版のGAでもBigQueryへのデータエクスポートが可能に
 - 旧アナリティクス にはできて、GA4ではできないこともある(search console設定など)
 
-## 今回の本題
+## 実際にBigQueryでGA4のデータを分析してみる
 今回はBigQueryへのデータエクスポートをしてアクセスログをBigQueryでデータ分析をしてみます
 
 ### 分析内容
@@ -97,7 +98,7 @@ WHERE _TABLE_SUFFIX BETWEEN FORMAT_DATE("%Y%m%d", PARSE_DATE("%Y-%m-%d", '2021-0
 AND  event_name = 'page_view';
 ```
 
-- GA4のデータは階層になっているので、平坦化してあげる必要があります。
+- GA4のデータは階層になっているので、平坦化する必要があります。
 GA4のスキーマ
 https://support.google.com/analytics/answer/7029846?hl=en&ref_topic=9359001
 - `traffic_source.name`にcampaignのデータが入ってます
