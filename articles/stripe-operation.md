@@ -17,7 +17,7 @@ published: false
 ### Unlaceについて
 [Unlace](https://www.unlace.net/?utm_campaign=unlace_f_article_zenn)は、主にユーザ向けのテキストカウンセリングを含むメンタルヘルスケアのサービスを提供しています。  
 
-(Unlaceがわかる画像)
+![](/images/stripe-operation/unlace.png)
 
 加えて、登録カウンセラーの方が利用するUnlace for counselorや、企業が従業員に対してUnlaceの利用料金を負担する仕組みを提供する[Unlace for business](https://www.unlace.net/business?utm_campaign=unlace_f_tech_zenn)も提供しています。
 
@@ -297,7 +297,7 @@ param := &stripe.PayoutParams{
     Currency: stripe.String(string(stripe.CurrencyJPY)),
     Amount:   stripe.Int64(amount),
 }
-param.SetStripeAccount(accountID) // これを外すと、プロットフォームへの入金になる
+param.SetStripeAccount(accountID) // これを外すと、プラットフォームへの入金になる
 client.Payouts.New(param)
 ```
 
@@ -342,17 +342,18 @@ if invoice.Charge != nil {
 
 ### 通常のWebhook と ConnectのWebhookの設定
 通常のイベントを受け取るWebhookで、Connectでの審査結果等のイベント名が表示されますが通常のwebhookで設定してもイベントが通知されることはありません。
-Connectで利用するイベントは別途Webhookを設定する必要があります。以下画像の「連結アカウントでイベントをリッスンする」にチェックすると、受け取ることができます。
+Connectで利用するイベントは別途Webhookを設定する必要があります。以下画像の「連結アカウントでイベントをリッスンする」にチェックすると、ConnectのWebhookを受け取ることができます。
 ![](/images/stripe-operation/connect_webhook.png)
 
 
 ## まとめ
-運用し始めてから1年半ほど経ち、要件が複雑になっていくため、かなり決済の仕組みも複雑になってきましたが、Stripeは全て対応できるほど機能が豊富で、かつ開発者ライクな仕組みがたくさんあります。
-全て紹介はできませんでしたが、少しでもStripeで決済システムを作ろうとしている人の力になれればと思います。
+運用し始めてから1年半ほど経ち、要件が複雑になっていくため、かなり決済の仕組みも複雑になってきましたが、  
+Stripeは全て対応できるほど機能が豊富、かつ開発者ライクな仕組みがたくさん、導入してよかったなと感じています。
+全てを紹介はできませんでしたが、少しでもStripeで決済システムを作ろうとしている人の力になれればと思います。
 
 ## さいごに
 Unlaceは2020年12月にサービス開始してから、成長し続けています。
-2022年7月にプレAシリーズで資金調達を完了したところで、これからより大きなサービスになっていきます。
+2022年7月に2回目の資金調達を完了したところで、これからより大きなサービスになっていきます。
 
 2022年7月現在、エンジニアは2人で開発しており、 まだまだたくさんのエンジニアが必要です！
 ユーザの価値貢献につながるサービスを一緒に作りませんか？
