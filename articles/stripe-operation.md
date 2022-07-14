@@ -62,10 +62,26 @@ Stripe上では、**Connected Accounts**にあたります。(以下Connectア�
 ユーザ登録とカウンセリングのサブスクリプションのフロー図です。
 
 #### ユーザのStripeアカウント登録
-![](/images/stripe-operation/register.png)
+
+```mermaid
+%%{init:{'theme':'forest'}}%%
+sequenceDiagram
+    User->>+Unlace: Stripeアカウント作成要求
+    Unlace->>-Stripe: Stripeアカウント作成(Customer.New())
+    Stripe->>+Unlace: Customer.ID
+		Unlace->>Unlace: ユーザとCustomer.IDの紐付け
+    Unlace->>-Stripe: サブスクリプションで利用するカード作成のための一時キー作成(SetupIntents.New())
+    Stripe-->>+Unlace: 一時キーの返却
+	　 Unlace-->>-User:一時キー
+    User->> Stripe: クレジットカードを直接Stripeに登録(confirmCardSetup())
+    Stripe-->> User: PaymentMethod.IDを返却
+　　   User->>+ Unlace: PaymentMethod.IDとCusomerの紐付け要求
+　   　Unlace->>- Stripe: Customerのデフォルトの支払いにPaymentMethod.IDを紐付け　
+　　
+```
 肝はカード情報はUnlaceを通さずに直接Stripeにリクエストしているところです。
 改正割賦販売法の要件を満たすために必要な部分になります。  
-「クレジットカード情報の適切な管理」をするためには、カード情報をネットワーク上の接続されたデバイスにて「通過」させない、「保存」しない、「処理」しないことが必要です。
+クレジットカード情報の適切な管理をするためには、カード情報をネットワーク上の接続されたデバイスにて「通過」させない、「保存」しない、「処理」しないことが必要です。
 これを実現するために、サーバ側にはStripeから発行されたトークンのみでやりとりを行います。
 https://stripe.com/jp/guides/installment-sales-act
 
@@ -92,7 +108,23 @@ param := &stripe.CustomerParams{
 ```
 
 #### ユーザのサブスクリプション
-![](/images/stripe-operation/subscription.png)
+```mermaid
+%%{init:{'theme':'forest'}}%%
+sequenceDiagram
+    User->>+Unlace: カウンセリング開始
+    Unlace->>-Stripe: サブスクリプションを作成(Subscription.New())
+    loop カウンセリング期間
+      Stripe->>+Unlace: Webhook(決済成功)
+      Unlace-->>-Unlace: カウンセリング開始ステータス変更
+    end
+    loop カウンセリング期間
+		  Stripe->>+Unlace: Webhook(決済失敗)
+      Unlace->>Unlace: カウンセリングができないステータスに変更
+      Unlace->>-User: カード変更を促す
+    end
+
+　　
+```
 既にCustomerに支払い情報が紐づいているので、Subscriptionを開始するだけです。
 適宜、決済エラーなどはWebhookで受け取って、DBにデータ反映しています。
 
@@ -132,7 +164,21 @@ https://stripe.com/docs/connect/custom-accounts
 
 UnlaceではシームレスなUXを実現するために、StripeConnectの **Custom** アカウントを利用しています。
 
-![](/images/stripe-operation/account_register.png)
+```mermaid
+%%{init:{'theme':'forest'}}%%
+sequenceDiagram
+    Counselor->>+Unlace: アカウント作成要求
+    Unlace ->>- Stripe: アカウント作成(Accounts.New())
+    Stripe -->> Unlace: account.ID
+    Unlace --> Unlace: カウンセラーとaccount.IDの紐付け
+    Counselor ->> Stripe: 銀行口座情報を直接Stripeへ投げる(createToken())
+    Stripe -->> Counselor:  tokenを返却
+　　 Counselor ->>+ Unlace: Connectアカウント更新
+　　 Unlace ->>- Stripe: 更新
+　　 Counselor ->> Stripe: 本人確認書類
+    Stripe -->> Unlace: Webhook(審査結果)
+     
+```
 銀行口座の情報や本人確認書類は直接Stripeへ通すことで、秘匿情報を持たなように設定しています。
 Connectアカウントは銀行口座の振込があり、審査が必要なので、 Webhookで審査結果を受け取り、ステータスを更新します。
 ```go
