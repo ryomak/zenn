@@ -375,7 +375,6 @@ Unlaceは2020年12月にサービス開始してから、成長し続けてい�
 https://job.unlace.net/
 
 
-また、これも紹介になりますが、
-Unlaceでは様々な診断を用意しています！
+また、Unlaceでは様々な診断を用意しています！
 個人的には認知の歪み診断は、思考の癖を知ることにに役立ちますので、お試しください！
 https://unlace.net/testing/cognitive?utm_campaign=unlace_f_tech_zenn&transition=web
