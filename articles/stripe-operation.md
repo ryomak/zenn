@@ -1,6 +1,6 @@
 ---
 title: "UnlaceにおけるStripeの導入~実装と、運用でぶつかった5つの壁"
-emoji: "💴"
+emoji: "🧙‍"
 type: "tech"
 topics: ["Stripe","Go"]
 published: false
@@ -237,10 +237,9 @@ https://stripe.com/docs/billing/migration/invoice-states
 
 ## 第2の壁： サブスクリプションのプランの支払いとプラン開始の時間を非同期にする
 ### 背景
-ユーザがカウンセリングを開始するフローは以下です。
 ![](/images/stripe-operation/counseling_flow.png)
 
-カウンセリングを始めるフローは
+ユーザがカウンセリングを開始するフローは以下です。
 - 相談内容を回答
 - 内容をもとに、マッチしたカウンセラーからコンタクトが届く
 - カウンセリングとマッチング
