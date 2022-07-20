@@ -1,0 +1,13 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/${_GCLOUD_PROJECT}/zenn-preview', '.']
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/${_GCLOUD_PROJECT}/zenn-preview']
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args: ['run', 'deploy', '${_SERVICE_NAME}', '--image', 'gcr.io/${_GCLOUD_PROJECT}/zenn-preview', '--region', 'asia-northeast1','--allow-unauthenticated', '--port','8000']
+images:
+  - gcr.io/${_GCLOUD_PROJECT}/zenn-preview
