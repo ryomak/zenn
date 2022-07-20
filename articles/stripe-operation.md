@@ -164,7 +164,7 @@ https://stripe.com/docs/connect/express-accounts
 Stripeに関する全ての体験をプラットフォーム側がカスタマイズします。
 https://stripe.com/docs/connect/custom-accounts
 
-
+#### StripeConnectのアカウント登録フロー
 ```mermaid
 %%{init:{'theme':'forest'}}%%
 sequenceDiagram
@@ -177,7 +177,7 @@ sequenceDiagram
 　　 Counselor ->>+ Unlace: Connectアカウント更新
 　　 Unlace ->>- Stripe: 更新
 　　 Counselor ->> Stripe: 本人確認書類
-    Stripe -->> Unlace: Webhook(審査結果)
+    Stripe -->> Unlace: Webhook(審査結果を受け取る)
      
 ```
 
