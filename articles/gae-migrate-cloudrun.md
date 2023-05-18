@@ -2,8 +2,8 @@
 title: "工数と影響範囲を抑えながら、GAEからCloud Runに移行した話"
 emoji: "🔦"
 type: "tech"
-topics: ["gae","cloudrun"]
-published: false
+topics: ["gae","cloudrun","go"]
+published: true 
 ---
 
 # はじめに
