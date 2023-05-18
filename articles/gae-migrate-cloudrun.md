@@ -33,26 +33,26 @@ UnlaceのバックエンドはGAEのStandard環境で構築されています。
 ## 移行コスト
 機能の実装・開発のスケジュールに余裕がなかったため、インフラの移行には、なるべく時間的コストを抑えることが必須でした。  
 GCEやGKSだと、インフラ環境の構築で時間がかかってしまうため、なるべくGAEと構成の近いCloud Runを選択しました。
-また、Cloud Runであれば、別で利用しているCloud TasksやCloud Schedulerの基本的な構成は変えず(以下で移行手順で説明)、影響範囲も小さく移行できることもメリットの一つでした。
+また、Cloud Runであれば、別で利用しているCloud TasksやCloud Schedulerの基本的な構成は変えず(以下の移行手順で説明)、影響範囲も小さく移行できることもメリットの一つでした。
 
 ## 運用コスト
-運用としてGAEはPaasで、運用コストは高くありませんでした。
 GCEは、仮想マシン側の管理まで必要になり、コード以外の範囲が監視対象になるので、GAEに比べて運用コストが高くなります。
 GKSも、k8sとしての運用コストが別に発生するため、GAEに比べて運用コストが高くなります。
-運用コストとしても、Cloud RunはDockerfileを用意すれば、他はGAEと変わらないため、一番良いと判断しました。
+Cloud Runは追加でDockerfileを用意するだけでよいため、現段階では一番適していると判断しました。
 
 
+## GAEからCloud Runへの移行による利点
 また、GAEからCloud Runに移行することで、以下のメリットも得られると考えました。
-## 言語バージョンの柔軟性
+### 言語バージョンの柔軟性
 StandardのGAEでは、言語のバージョンに制限があります。  
 UnlaceではGo言語をバックエンドに利用していますが、StandardのGAEだと、2023年初旬まではGoの最新バージョンが1.16だったため、Genericsの導入が遅れたという経緯があります。
-Cloud Runであれば、このような制限がないため、柔軟に開発環境を選択することができるようになりました。
+Cloud Runであれば、このような制限がないため、柔軟に開発環境を選択することができるようになります。
 
-## 環境構成の更新の分離性
+### 環境構成の更新の分離性
 GAEでは`app.yaml`で記載された構成を変更する際、コードも全て再度デプロイする必要がありました。  
 これだと、環境変数などのインスタンスの構成だけ変更したい時でも時間がかかり、面倒でした。
 
-Cloud Runであれば、構成ファイルの更新だけを分離して反映されることができます。
+Cloud Runであれば、構成ファイルの更新だけを反映させることができ、 CIとCDを分離することができます。
 
 
 # 移行の流れ
@@ -130,7 +130,7 @@ func UpdateEnv() error {
     req := &tasks.CreateTaskRequest{
 		Parent: createQueuePath(queueID),
 		Task: &tasks.Task{
-			ScheduleTime: restartAt,
+			ScheduleTime: scheduleAt,
 			Name:         "{taskName}",
 			MessageType: &tasks.Task_HttpRequest{
 				HttpRequest: &tasks.HttpRequest{
@@ -155,7 +155,7 @@ GAEでは、`App Engine HTTP` をターゲットに設定していたので、HT
 前提として、既存のcron.yamlファイルは以下のようにGAE向けの設定になっています。
 schedule等はそのまま流用できるのですが、 HTTPターゲットでのジョブに名前を設定する必要があるため、追加作業として各Jobにnameを追加します。
 
-※ [公式](https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules?hl=ja)では、以下のように記述があるため、 App Engine cronの記法は推奨されていませんが、サポートはされていますので、別のタイミングで、unix-cronの記法に変更が必要ですが、今回はそのまま流用しました。
+※ [公式](https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules?hl=ja)では、以下のように記述があり、 App Engine cronの記法は推奨されていませんが、サポートはされているので今回はそのまま流用しました。
 ```
 unix-cron に基づく形式で指定します。ジョブを 1 日に複数回実行するか、または具体的な日と月に実行するようにスケジュールを定義できます。
 (おすすめしませんが、従来の App Engine cron 構文は既存のジョブで引き続きサポートされます。)
