@@ -27,7 +27,7 @@ UnlaceのバックエンドはGAEのStandard環境で構築されています。
 そのため、GAEから別のサービスに乗り換える必要がありました。
 
 @[tweet](https://twitter.com/unlace_net/status/1651110511604555777)
-(Searchlightの詳細が知りたい方は、[こちらの記事](https://zenn.dev/yuto_iwashita/articles/gpt-searchlight)をご覧ください。)
+(Searchlightの詳細は、[こちらの記事](https://zenn.dev/yuto_iwashita/articles/gpt-searchlight)をご覧ください。)
 
 ストリーミングだけであれば、GCEやGKS等でも実現できますが、以下の理由により、Cloud Runに移行することにしました。
 ## 移行コスト
