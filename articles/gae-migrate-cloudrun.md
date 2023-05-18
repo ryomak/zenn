@@ -1,5 +1,5 @@
 ---
-title: "工数と影響範囲を抑えながら、GAEからCloudRunに移行した話"
+title: "工数と影響範囲を抑えながら、GAEからCloud Runに移行した話"
 emoji: "🔦"
 type: "tech"
 topics: ["gae","cloudrun"]
@@ -8,16 +8,16 @@ published: false
 
 # はじめに
 [Unlace](https://www.unlace.net/?utm_campaign=unlace_f_tech_zenn)でバックエンドエンジニアをしている栗栖です。
-Searchlightという機能をリリースするにあたって、APIをGoogle App Engine(以後GAE) からCloud Runにダウンタイム0で移行しました。　　
-移行の理由と、具体的に工数と影響範囲を抑えるよう工夫しながら移行した内容についてまとめます。
+バックエンドAPIをGoogle App Engine(以後GAE) からCloud Runにダウンタイム0で移行しました。　　
+API移行の理由と、具体的に工数と影響範囲を抑えるよう工夫しながら移行した内容についてまとめます。
 また、移行するにあたってつまづいた点も紹介します。
 
 # この記事で伝えたいこと
-- GAEからCloudRunに工数と影響範囲を抑えながら移行する
-- CloudRunに移行する時につまづいた点と解決策
+- GAEからCloud Runに工数と影響範囲を抑えながら移行する
+- Cloud Runに移行する時につまづいた点と解決策
 
 
-# なぜCloudRunに移行したのか
+# なぜCloud Runに移行したのか
 UnlaceのバックエンドはGAEのStandard環境で構築されています。
 
 4月末にChatGPTを利用した**Searchlight**という機能では、リアルタイムでの応答を実現するためのストリーミングが必要でした。  
@@ -27,42 +27,52 @@ UnlaceのバックエンドはGAEのStandard環境で構築されています。
 そのため、GAEから別のサービスに乗り換える必要がありました。
 
 @[tweet](https://twitter.com/unlace_net/status/1651110511604555777)
-(Searchlightを詳細が知りたい方は、[こちらの記事](https://zenn.dev/yuto_iwashita/articles/gpt-searchlight)をご覧ください。)
+(Searchlightの詳細が知りたい方は、[こちらの記事](https://zenn.dev/yuto_iwashita/articles/gpt-searchlight)をご覧ください。)
 
-ストリーミングだけであれば、GCEやGKS等でも実現できますが、以下の理由により、CloudRunに移行することにしました。
+ストリーミングだけであれば、GCEやGKS等でも実現できますが、以下の理由により、Cloud Runに移行することにしました。
 ## 移行コスト
 機能の実装・開発のスケジュールに余裕がなかったため、インフラの移行には、なるべく時間的コストを抑えることが必須でした。  
-GCEやGKSだと、インフラの環境の構築で時間がかかってしまうため、なるべくGAEと構成の近いCloud Runを選択しました。
-また、CloudRunであれば、別で利用しているCloud TasksやCloud Schedulerの基本的な構成は変えず(以下で移行手順で説明)、影響範囲も小さく移行できることもメリットの一つです。
+GCEやGKSだと、インフラ環境の構築で時間がかかってしまうため、なるべくGAEと構成の近いCloud Runを選択しました。
+また、Cloud Runであれば、別で利用しているCloud TasksやCloud Schedulerの基本的な構成は変えず(以下で移行手順で説明)、影響範囲も小さく移行できることもメリットの一つでした。
 
+## 運用コスト
+運用としてGAEはPaasで、運用コストは高くありませんでした。
+GCEは、仮想マシン側の管理まで必要になり、コード以外の範囲が監視対象になるので、GAEに比べて運用コストが高くなります。
+GKSも、k8sとしての運用コストが別に発生するため、GAEに比べて運用コストが高くなります。
+運用コストとしても、Cloud RunはDockerfileを用意すれば、他はGAEと変わらないため、一番良いと判断しました。
+
+
+また、GAEからCloud Runに移行することで、以下のメリットも得られると考えました。
 ## 言語バージョンの柔軟性
 StandardのGAEでは、言語のバージョンに制限があります。  
 UnlaceではGo言語をバックエンドに利用していますが、StandardのGAEだと、2023年初旬まではGoの最新バージョンが1.16だったため、Genericsの導入が遅れたという経緯があります。
-CloudRunであれば、このような制限がないため、柔軟に開発環境を選択することができます。
+Cloud Runであれば、このような制限がないため、柔軟に開発環境を選択することができるようになりました。
 
 ## 環境構成の更新の分離性
 GAEでは`app.yaml`で記載された構成を変更する際、コードも全て再度デプロイする必要がありました。  
 これだと、環境変数などのインスタンスの構成だけ変更したい時でも時間がかかり、面倒でした。
 
-CloudRunであれば、構成ファイルの更新だけを分離して反映されることができます。
+Cloud Runであれば、構成ファイルの更新だけを分離して反映されることができます。
+
 
 # 移行の流れ
 全体のフローとしては、以下記事に記載されているフローと同じになります。
-前段のロードバランサーの向き先をGAEからCloudRunに切り替える流れです。
+あらかじめCloud Runをデプロイしたあと、
+前段のロードバランサーの向き先をGAEからCloud Runに切り替えるという流れです。
 
-かなり参考にさせていただきました。ありがとうございます。
+こちらの記事とても参考にさせていただきました。ありがとうございます。
 https://zenn.dev/team_zenn/articles/migrate-appengine-to-cloudrun
 
-以下では、実際に、GAEの既存のコードや仕組みを利用して、工数と影響範囲を抑えながら移行した方法をご紹介します。
+以下では、実際に、GAEの既存のコードや仕組みを利用して、工数と影響範囲を抑えながら移行した方法を説明します。
 
 ## Cloud Runの環境変数の設定
 
 GCPのコンソール上で環境変数の設定は可能ですが、手動で対応するのはとても大変ですし、ミスを起こしやすいと思います。
 
-そのためGAEの設定をそのままCloudRunに移すスクリプトを作成しました。
+そのためGAEの設定をそのままCloud Runに移すスクリプトを作成しました。
 `app.yaml`の環境変数を、gcloudコマンドのservice update でenvを更新します。  
 
-こうしておけば、既存の`app.yaml`で設定している環境をそのままCloudRunに反映することができます。
+こうしておけば、既存の`app.yaml`で設定している環境をそのままCloud Runに反映することができます。
 
 最初は`service.yaml`自体をRepositoryで管理することも検討しましたが、
 `service.yaml`は全てのインフラ構成の設定が入っていて、変更の必要のない設定も多いため、環境変数だけを管理するようにしました。
@@ -142,7 +152,8 @@ func UpdateEnv() error {
 GAEでは、`App Engine HTTP` をターゲットに設定していたので、HTTPターゲットに変更が必要でした。  
 なるべく影響反映を小さくするために、cron.yamlの構成をそのまま流用するスクリプトを作成します。
 
-前提として、既存のcron.yamlファイルは以下のようにAppEngine向けの設定になっています。schedule等はそのまま流用できるのですが、 HTTPターゲットでのジョブに名前を設定する必要があるため、追加作業として各Jobにnameを追加します。
+前提として、既存のcron.yamlファイルは以下のようにGAE向けの設定になっています。
+schedule等はそのまま流用できるのですが、 HTTPターゲットでのジョブに名前を設定する必要があるため、追加作業として各Jobにnameを追加します。
 
 ```yaml
 cron:
@@ -262,15 +273,15 @@ func scheduler()error {
 		jobName := fmt.Sprintf("%s/jobs/%s", parent, cron.Name)
 		job := itemsMap[jobName]
 		switch {
-		// まだ作成されていないjob
+		// まだ作成されていないjobは作成
 		case job == nil:
-			if err := executeJob(client, schedulerActionCreate, parent, jobName, fmt.Sprintf("%s%s", env.CloudRunDefaultAppURL(), cron.URL), cron.Schedule, cron.Timezone, cron.Description); err != nil {
+			if err := executeJob(client, schedulerActionCreate, parent, jobName, fmt.Sprintf("%s%s", env.Cloud RunDefaultAppURL(), cron.URL), cron.Schedule, cron.Timezone, cron.Description); err != nil {
 				return err
 			}
 			delete(itemsMap, jobName)
 		case job != nil:
-			if job.Schedule != cron.Schedule || job.TimeZone != cron.Timezone || job.Description != cron.Description || job.HttpTarget.Uri != fmt.Sprintf("%s%s", env.CloudRunDefaultAppURL(), cron.URL) {
-				if err := executeJob(client, schedulerActionUpdate, parent, jobName, fmt.Sprintf("%s%s", env.CloudRunDefaultAppURL(), cron.URL), cron.Schedule, cron.Timezone, cron.Description); err != nil {
+			if job.Schedule != cron.Schedule || job.TimeZone != cron.Timezone || job.Description != cron.Description || job.HttpTarget.Uri != fmt.Sprintf("%s%s", env.Cloud RunDefaultAppURL(), cron.URL) {
+				if err := executeJob(client, schedulerActionUpdate, parent, jobName, fmt.Sprintf("%s%s", env.Cloud RunDefaultAppURL(), cron.URL), cron.Schedule, cron.Timezone, cron.Description); err != nil {
 					return err
 				}
 			} else {
@@ -293,35 +304,37 @@ func scheduler()error {
 
 
 
-## 当日の移行作業：ロードバランサーの向き先でCloudRunに変更する
-元からUnlaceでは前段にロードバランサーがあるため、向き先をGAEからCloudRunに変更するだけでよいので、当日の実際の移行作業は。
-CloudRunと紐づくServerless NEG/バックエンドサービスを作成し、ロードバランサーの向き先をCloudRunに切り替えます。 
+## 当日の移行作業：ロードバランサーの向き先でCloud Runに変更する
+元からUnlaceでは前段にロードバランサーがあるため、向き先をGAEからCloud Runに変更するだけでよいので、当日の実際の移行作業は。
+Cloud Runと紐づくServerless NEG/バックエンドサービスを作成し、ロードバランサーの向き先をCloud Runに切り替えます。 
 - GAE
 ![](/images/gae-migrate-cloudrun/gae.png)
-- CloudRun
+- Cloud Run
 ![](/images/gae-migrate-cloudrun/cloudrun.png)
 
 
-# CloudRun導入にあたってつまづいた点
+
+# Cloud Run導入にあたってつまづいた点
 ## 最小インスタンス数
-GAEと比べてCloudRunではスピンアップまでの時間がかかるため、最小インスタンスを0にしているとレイテンシーが悪化します。  
-最小インスタンスは1以上で設定するのが良いと思います。  
+GAEと比べてCloud Runではスピンアップまでの時間がかかるため、コスト削減による最小インスタンスを0にしていると、インスタンス起動により、レイテンシーが悪化します。  
+少なくともインスタンスは1以上で設定するのをおすすめします。
 
 ## 最大インスタンス数
-dev環境での動作確認時、CloudRunでは最大インスタンスを3に設定していたのですが、ポツポツとバックエンドエラーを返すようになっていました。  
-原因を掴むにかなり時間がかかりましたが、GCPのUI上に注意書きがありましたorz
+dev環境での動作確認時、Cloud Runでは最大インスタンスを3に設定していたのですが、動作確認をしているとポツポツとエラーを返すようになっていました。  
+原因を掴むのにかなり時間がかかりましたが、GCPのUI上に注意書きがありましたorz
 以下にもある通り、最大インスタンスは4以上にしました。
 ![](/images/gae-migrate-cloudrun/maxinstance.png)
 
+
 ## CloudTaskへのリクエストタイムアウトが30sを超えるとエラーになること
-これはCloudRunに限らずかつGo言語のパッケージで起きたことですが、ご紹介します。  
+これはCloud Runに限らずかつGo言語のパッケージで起きたことですが、ご紹介します。  
 CloudTaskをバックエンドからリクエストをする時、親コンテキストのタイムアウトが30sを超えていると、エラーになってしまいます。
 ```markdown
 rpc error: code = InvalidArgument desc = The request deadline is xxxx. The deadline cannot be more than 30s in the future.
 ```
-移行対応時に、CloudTasksを処理するAPIを明示的に5分とタイムアウトと設定したため、このエラーが発生しました。
+移行対応時に、CloudTasksを処理するAPIを明示的に5分のタイムアウトを設定したため、このエラーが発生しました。
 
-対応としては、[issue](https://github.com/googleapis/google-cloud-go/issues/1577)にもある通り、親コンテキストからのタイムアウトを30s以内に設定しました。
+対応としては、[issue](https://github.com/googleapis/google-cloud-go/issues/1577)にもある通り、Cloud Tasksを呼び出す時はTimeoutを30s以内に設定しました。
 
 ```go
 // ctxのタイムアウトが30sを超えているとエラーになる
@@ -353,10 +366,8 @@ func task(ctx context.Context) {
 |  Cloud Scheduler  |  `X-Appengine-Cron` | `X-CloudScheduler` |
 |  Clout Tasks |  `X-Appengine-Cron`  | `X-CloudTasks-TaskName` |
 
-
-
 # まとめ
-GAEの既存設定を利用することで、工数と影響範囲を抑えてCloudRunへの移行し、予定通りに機能リリースすることができました。
+GAEの既存設定を利用することで、工数と影響範囲を抑えてCloud Runへの移行し、予定通りに機能リリースすることができました。
 
 これによりストリーミングが実現できただけではなく、 
 インスタンスに対しても、細かい設定ができるようになり、より柔軟な運用ができるようになりました。  
