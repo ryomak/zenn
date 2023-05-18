@@ -155,6 +155,13 @@ GAEでは、`App Engine HTTP` をターゲットに設定していたので、HT
 前提として、既存のcron.yamlファイルは以下のようにGAE向けの設定になっています。
 schedule等はそのまま流用できるのですが、 HTTPターゲットでのジョブに名前を設定する必要があるため、追加作業として各Jobにnameを追加します。
 
+※ [公式](https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules?hl=ja)では、以下のように記述があるため、 App Engine cronの記法は推奨されていませんが、サポートはされていますので、別のタイミングで、unix-cronの記法に変更が必要ですが、今回はそのまま流用しました。
+```
+unix-cron に基づく形式で指定します。ジョブを 1 日に複数回実行するか、または具体的な日と月に実行するようにスケジュールを定義できます。
+(おすすめしませんが、従来の App Engine cron 構文は既存のジョブで引き続きサポートされます。)
+```
+
+既存のcron.yamlの例
 ```yaml
 cron:
   - description: "hogehoge"
