@@ -1,9 +1,9 @@
 ---
-title: "工数と影響範囲を抑えながら、GAEからCloud Runに移行した話"
+title: "GAEの設定を利用しながら、GAEからCloud Runに移行した話"
 emoji: "🔦"
 type: "tech"
 topics: ["gae","cloudrun","go"]
-published: true 
+published: false 
 ---
 
 # はじめに
@@ -13,7 +13,7 @@ API移行の理由と、具体的に工数と影響範囲を抑えるよう工�
 また、移行するにあたってつまづいた点も紹介します。
 
 # この記事で伝えたいこと
-- GAEからCloud Runに工数と影響範囲を抑えながら移行する
+- GAEの設定を利用しながら、工数と影響範囲を抑えて移行する
 - Cloud Runに移行する時につまづいた点と解決策
 
 
@@ -24,7 +24,7 @@ UnlaceのバックエンドはGAEのStandard環境で構築されています。
 しかし、GAEだとストリーミングに[対応していません。](https://cloud.google.com/appengine/docs/standard/java-gen2/how-requests-are-handled?hl=ja#streaming_responses)
 実際に、GAEでSSEを試すと、チャンクごとに送られず、単一のHTTPレスポンスとして送信されてしまいます。
 
-そのため、GAEから別のサービスに乗り換える必要がありました。
+そのため、GAEから別のサービスに載せ替える必要がありました。
 
 @[tweet](https://twitter.com/unlace_net/status/1651110511604555777)
 (Searchlightの詳細は、[こちらの記事](https://zenn.dev/yuto_iwashita/articles/gpt-searchlight)をご覧ください。)
@@ -33,7 +33,7 @@ UnlaceのバックエンドはGAEのStandard環境で構築されています。
 ## 移行コスト
 機能の実装・開発のスケジュールに余裕がなかったため、インフラの移行には、なるべく時間的コストを抑えることが必須でした。  
 GCEやGKSだと、インフラ環境の構築で時間がかかってしまうため、なるべくGAEと構成の近いCloud Runを選択しました。
-また、Cloud Runであれば、別で利用しているCloud TasksやCloud Schedulerの基本的な構成は変えず(以下の移行手順で説明)、影響範囲も小さく移行できることもメリットの一つでした。
+また、Cloud Runであれば、すでに利用しているCloud TasksやCloud Schedulerの基本的な構成は変えず(以下の移行手順で説明)、影響範囲も小さく移行できることもメリットの一つでした。
 
 ## 運用コスト
 GCEは、仮想マシン側の管理まで必要になり、コード以外の範囲が監視対象になるので、GAEに比べて運用コストが高くなります。
@@ -70,7 +70,7 @@ https://zenn.dev/team_zenn/articles/migrate-appengine-to-cloudrun
 GCPのコンソール上で環境変数の設定は可能ですが、手動で対応するのはとても大変ですし、ミスを起こしやすいと思います。
 
 そのためGAEの設定をそのままCloud Runに移すスクリプトを作成しました。
-`app.yaml`の環境変数を、gcloudコマンドのservice update でenvを更新します。  
+GAEで利用している`app.yaml`の環境変数を、gcloudコマンドのservice update でenvを更新します。  
 
 こうしておけば、既存の`app.yaml`で設定している環境をそのままCloud Runに反映することができます。
 
@@ -153,7 +153,7 @@ GAEでは、`App Engine HTTP` をターゲットに設定していたので、HT
 なるべく影響反映を小さくするために、cron.yamlの構成をそのまま流用するスクリプトを作成します。
 
 前提として、既存のcron.yamlファイルは以下のようにGAE向けの設定になっています。
-schedule等はそのまま流用できるのですが、 HTTPターゲットでのジョブに名前を設定する必要があるため、追加作業として各Jobにnameを追加します。
+schedule等はそのまま流用できるのですが、 HTTPターゲットでのジョブでは、名前を設定する必要があるため、追加作業として各Jobにnameを追加します。
 
 ※ [公式](https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules?hl=ja)では、以下のように記述があり、 App Engine cronの記法は推奨されていませんが、サポートはされているので今回はそのまま流用しました。
 ```
@@ -168,7 +168,7 @@ cron:
     url: /api/cron/hogehoge
     schedule: every day 14:00
     target: default
-    // name: "hogeHogeJob"
+    name: "hogeHogeJob"　// 追加
 ```
 
 
@@ -373,12 +373,11 @@ func task(ctx context.Context) {
 |  Cloud Scheduler  |  `X-Appengine-Cron` | `X-CloudScheduler` |
 |  Clout Tasks |  `X-Appengine-Cron`  | `X-CloudTasks-TaskName` |
 
-# まとめ
+# 移行完了した所感
 GAEの既存設定を利用することで、工数と影響範囲を抑えてCloud Runへの移行し、予定通りに機能リリースすることができました。
 
-これによりストリーミングが実現できただけではなく、 
-インスタンスに対しても、細かい設定ができるようになり、より柔軟な運用ができるようになりました。  
-
+Cloud Runにストリーミングが実現できただけではなく、 
+Dockerによる細かい設定ができるようになり、より柔軟な運用ができるようになりました。
 
 # 最後に
 Unlaceはクライエントとカウンセラー双方がよりよい体験を得られるサービスを提供していくため、様々な技術に挑戦しています。
