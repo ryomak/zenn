@@ -3,7 +3,7 @@ title: "GAEの設定を利用しつつ、GAEからCloud Runに移行した話"
 emoji: "🔦"
 type: "tech"
 topics: ["gae","cloudrun","go"]
-published: false 
+published: true 
 ---
 
 # はじめに
