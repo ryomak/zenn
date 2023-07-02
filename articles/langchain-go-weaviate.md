@@ -3,7 +3,7 @@ title: "Go版のLangChainとWeaviateを使って、Q&A機能を作ってみる"
 emoji: "🧪"
 type: "tech"
 topics: ["go","LangChain","ChatGPT","Weaviate"]
-published: false
+published: true
 ---
 
 ## はじめに
