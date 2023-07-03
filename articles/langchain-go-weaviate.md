@@ -7,10 +7,11 @@ published: true
 ---
 
 ## はじめに
-Go版のLangChainとWeaviateというVectorStoreを使って、Q&A機能を作ってみます。
+Go版のlangchaingoというOSSが、公開されていたので
+Go版のLangChainとWeaviateというVectorStoreを使って、Q&A機能を実装&試してみました。
 
 ## 利用するリポジトリ
-https://github.com/tmc/LangChaingo/
+https://github.com/tmc/langchaingo/
 
 ## サンプルコード
 https://github.com/ryomak/LangChain-go-example
@@ -29,10 +30,10 @@ result:
 
 ## Q&Aのフロー
 今回は以下のフローでQ&A機能を実現します。
-- 前準備：あらかじめ、Q&Aで回答するデータをベクトル化して保存する
-- ユーザの質問をベクトル化して、保存しておいたデータとの類似度を計算する
-- 近しいドキュメントをいくつか取得する
-- GPTに、取得したドキュメントをプロンプトに含めて質問する
+- 前準備：あらかじめ、Q&Aで用いる事前データをベクトル化して保存する
+- ユーザの質問をベクトル化して、保存しておいたベクトルと類似度を計算する
+- 類似度が高いドキュメントをいくつか取得する
+- 取得したドキュメントをコンテキストとして、プロンプトに含めて質問する
 - GPTの出力を返す
 
 ## 環境変数
@@ -70,7 +71,7 @@ Weaviateに保存するクラスを作成します。
 クラスは、オブジェクトを格納するデータコレクションです。
 
 プロパティには、textとnamespaceを定義します。
-後述しますが、LangChaingoではどちらも必須のプロパティになります。
+後述しますが、langchaingoではどちらも必須のプロパティになります。
 ```go
 func main() {
 	weaviateClient := weaviate.New(weaviate.Config{
@@ -106,47 +107,9 @@ func main() {
 
 
 ### データを入稿する
-LangChaingoのdocumentLoaderはまだ未実装が多いのですが、
-既存で存在するCSVとHTMLのデータを入稿するスクリプトを用意しました。
+langchaingoのdocumentLoaderはまだ未実装が多いのですが、
+すでに実装済みの、HTMLのLoaderを使って、データ入稿するスクリプトを用意しました。
 
-#### CSV
-入稿スクリプト
-```go
-func main() {
-	chain, err := qa.New()
-	if err != nil {
-		panic(err)
-	}
-
-	ctx := context.Background()
-
-	file, err := os.Open("./script/insert_docs_csv/qa.csv")
-	if err != nil {
-		panic(err)
-	}
-	loader := documentloaders.NewCSV(file)
-	docs, err := loader.Load(context.Background())
-	if err != nil {
-		panic(err)
-	}
-	for _, v := range docs {
-		if err := chain.AddDocument(ctx, qa.NameSpaceCSV, v.PageContent); err != nil {
-			panic(err)
-		}
-	}
-	fmt.Println("done")
-}
-
-```
-
-入稿データ
-```csv
-"Q","A"
-"xxxの別名は何ですか？","yyyy"
-....
-```
-
-#### HTML
 入稿スクリプト
 ```go
 func main() {
@@ -190,7 +153,7 @@ https://tip.golang.org/doc/go1.21
 ## インスタンスの生成
 llmと文章のベクトル化に、OpenAIを利用します。
 - indexName: Weaviateのクラスと一致します。
-- textKey: Weaviateのtextプロパティと一致します。LangChaingoで検索して類似したベクトルの元の文章が格納されています。
+- textKey: Weaviateのtextプロパティと一致します。langchaingoで検索して類似したベクトルの元の文章が格納されています。
 - nameSpaceKey: Weaviateのnamespaceプロパティと一致します。weaviateの1つのクラスで、複数のQ&Aを管理するために利用します。
 ```go
 const (
@@ -287,7 +250,7 @@ func (l *QA) Answer(ctx context.Context, namespace NameSpace, question string) (
 
 ### プロンプトテンプレート
 プロンプトテンプレートは、回答の文章を生成するためのテンプレートです。
-`RetrievalQA`を利用する場合は、デフォルトで以下キーをプロンプトに埋め込まれます。キーは独自に設定可能です。
+`RetrievalQA`を利用する場合は、デフォルトでは以下キーに設定した値がプロンプトに埋め込まれます。キーは独自に設定可能です。
 - context: VectorStoreでの検索結果の文章
 - question: 質問の文章
 
@@ -342,9 +305,9 @@ func main() {
 		}
 
 		fmt.Println("=====================================")
-		fmt.Println("kind:\n", v.nameSpace)
-		fmt.Println("question:\n", v.question)
-		fmt.Println("result:\n", result)
+		fmt.Printf("kind:\n %s", v.nameSpace)
+		fmt.Printf("question:\n %s", v.question)
+		fmt.Printf("result:\n %s", result)
 		fmt.Println("=====================================")
 	}
 }
@@ -366,7 +329,7 @@ result:
 
 ## 最後に
 Q&A機能をかなり簡単に作成することができました。  
-LangChaingoは、本家のPythonやJavaScript版に比べると、まだまだ機能が足りていないですが、
+langchaingoは、本家のPythonやJavaScript版に比べると、まだまだ機能が足りていないですが、
 機能が増えていくにつれて、より多くの多様な応用が可能になると考えています。
 
 また、Weaviateも簡単にベクトル検索ができるので、使い勝手もかなり良いな思いました。
