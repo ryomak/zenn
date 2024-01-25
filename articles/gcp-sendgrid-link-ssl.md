@@ -8,7 +8,7 @@ published: false
 
 SendGridのClickTracking機能により、メール内のリンククリックを追跡し、効果的なメールキャンペーンの運用をサポートします。
 
-デフォルトだと、メール内のリンクはすべて`sendgrid.net`ドメインのリンクに書き変わり、メールの信頼性に影響を与える可能性があります。
+デフォルトだと、メール内のリンクはすべて`sendgrid.net`ドメインのリンクに書き変わり、送信ドメインとリンクのドメインが異なるため、メールの信頼性を損なう可能性があります。
 独自ドメインを使用することで、この問題を解決し、メールの到達率を高めることが可能になります。
 [Link Branding](https://sendgrid.kke.co.jp/docs/User_Manual_JP/Settings/Sender_authentication/How_to_set_up_link_branding.html)という仕組みで、独自ドメインを利用することができます。
 
