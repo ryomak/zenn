@@ -45,6 +45,23 @@ https://support.sendgrid.com/hc/en-us/articles/4447646844187-Enabling-SSL-for-Cl
 - Link Brandingでのドメインは、`url.example.com`とします
 - sendgridをproxyするドメインは、`proxy.example.com`とします
 
+### 構成
+```mermaid
+sequenceDiagram
+    participant User as ユーザー
+    participant UrlDomain as url.example.com
+    participant Proxy as proxy.example.com
+    participant SendGrid as sendgrid.net
+
+    User->>UrlDomain: リンククリック
+    UrlDomain->>Proxy: CNAME (リダイレクト)
+    Proxy->>SendGrid: プロキシ経由でリクエスト
+    SendGrid->>Proxy: レスポンス
+    Proxy->>User: レスポンス
+
+```
+
+
 ## 手順1 Domain AuthenticationとLink Brandingを設定する
 SendGrid管理画面->Settings->Sender Authentication->Link Brandingで設定できます。
 urlを設定した後は、管理画面に沿って、CNAMEレコードを設定しstatusが`verified`になるのを確認します。
