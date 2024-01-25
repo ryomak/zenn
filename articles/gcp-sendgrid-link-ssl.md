@@ -3,7 +3,7 @@ title: "GCPでSendGridのメール内リンクをSSL化する"
 emoji: "📧"
 type: "tech"
 topics: ["SendGrid","GCP"]
-published: false
+published: true
 ---
 
 SendGridのClickTracking機能により、メール内のリンククリックを追跡し、効果的なメールキャンペーンの運用をサポートします。
