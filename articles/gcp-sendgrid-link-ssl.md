@@ -66,11 +66,13 @@ HTTPS接続で、proxy.example.comにアクセスすると、sendgrid.netから�
    5. ドメイン: `sendgrid.net`
 2. 作成したエンドグループををもとに、バックエンドサービスを作成
    1. バックエンドタイプ: インターネットネットワークエンドグループ
-   2. プロトコル: HTTPS
+   2. ネットワークエンドポイントグループ: 1で作成したネットワークエンドポイントグループ
+   3. プロトコル: HTTPS
 3. バックエンドサービスをもとに、URLマップを作成
    1. パスのルール: 全て
    2. ドメイン： `proxy.example.com`
    3. バックエンドサービス: 2で作成したバックエンドサービス
+
 
 
 ### url.example.comとproxy.example.comのSSL証明書を作成し、Cloud Load Balancingに割り当てる
@@ -120,7 +122,7 @@ CNAMEを利用して、`url.example.com`のアクセス先を`proxy.example.com`
 url.example.com. 300 IN CNAME proxy.example.com.
 ```
 
-一点注意です。
+*注意点*
 この対応にてDNSレコードの変更した後はLink BrandingのVerifyを行わないでください。
 なぜなら、今回の対応で`url.example.com`のCNAMEが、`sendgrid.net`に向いていないため、認証が失敗してしまうからです。
 
