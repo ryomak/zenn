@@ -47,8 +47,9 @@ https://support.sendgrid.com/hc/en-us/articles/4447646844187-Enabling-SSL-for-Cl
 
 ## 手順1 Domain AuthenticationとLink Brandingを設定する
 SendGrid管理画面->Settings->Sender Authentication->Link Brandingで設定できます。
-urlを設定した後は、管理画面に沿って、`url.example.com`に対して、CNAMEで、`sendgrid.net`が設定し認証が`verified`になるのを確認します。
+urlを設定した後は、管理画面に沿って、CNAMEレコードを設定しstatusが`verified`になるのを確認します。
 ```
+# 例
 url.example.com. 300 IN CNAME sendgrid.net.
 ```
 
@@ -59,19 +60,19 @@ HTTPS接続で、proxy.example.comにアクセスすると、sendgrid.netから�
 
 ### SendGridにプロキシするためのパスルールを設定
 1. `sendgrid.net`に443ポートでプロキシするためのネットワーク エンドポイント グループを作成
-   1. 種類: インターネットNEG
-   2. 範囲: Global
-   3. ポート: 443
-   4. 追加手段: 完全修飾ドメインとポート
-   5. ドメイン: `sendgrid.net`
+   - 種類: インターネットNEG
+   - 範囲: Global
+   - ポート: 443
+   - 追加手段: 完全修飾ドメインとポート
+   - ドメイン: `sendgrid.net`
 2. 作成したエンドグループををもとに、バックエンドサービスを作成
-   1. バックエンドタイプ: インターネットネットワークエンドグループ
-   2. ネットワークエンドポイントグループ: 1で作成したネットワークエンドポイントグループ
-   3. プロトコル: HTTPS
+   - バックエンドタイプ: インターネットネットワークエンドグループ
+   - ネットワークエンドポイントグループ: 1で作成したネットワークエンドポイントグループ
+   - プロトコル: HTTPS
 3. バックエンドサービスをもとに、URLマップを作成
-   1. パスのルール: 全て
-   2. ドメイン： `proxy.example.com`
-   3. バックエンドサービス: 2で作成したバックエンドサービス
+   - パスのルール: 全て
+   - ドメイン： `proxy.example.com`
+   - バックエンドサービス: 2で作成したバックエンドサービス
 
 
 
@@ -123,8 +124,8 @@ url.example.com. 300 IN CNAME proxy.example.com.
 ```
 
 *注意点*
-この対応にてDNSレコードの変更した後はLink BrandingのVerifyを行わないでください。
-なぜなら、今回の対応で`url.example.com`のCNAMEが、`sendgrid.net`に向いていないため、認証が失敗してしまうからです。
+この対応にてレコード変更した後は、Link Brandingの再Verifyを行わないでください。
+なぜなら、今回の対応で`url.example.com`のCNAMEが、`sendgrid.net`に向いていないため、Verifyに失敗してしまうからです。
 
 ## SendGridのサポートにSSL Click Trackingを有効化してもらう
 https://support.sendgrid.com/hc/en-us/requests/new
