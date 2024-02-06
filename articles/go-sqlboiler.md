@@ -482,7 +482,27 @@ Insert/Update/Upsertを呼び出す際に、挿入・更新すべきカラムを
 | Blacklist | Inferで選択されたカラムから、指定したカラムを除外します。        |
 | Greylist | Inferで選択されたカラムに合わせて、指定したカラムを追加します。     |
 
-※ デフォルトだと、Infer()の時、`created_at`/`updated_at`は、Insert(),Update()の際にゼロ値であれば、自動で日時がセットされるようになっています。
+※ `created_at`/`updated_at`カラムは、Insert(),Update()の際によしなに値がセットされるようになっています。
+```go
+// Insertの内部処理
+if !boil.TimestampsAreSkipped(ctx) {
+    currTime := time.Now().In(boil.GetLocation())
+
+    if o.CreatedAt.IsZero() {
+        o.CreatedAt = currTime
+    }
+    if o.UpdatedAt.IsZero() {
+        o.UpdatedAt = currTime
+    }
+}
+
+// Updateの内部処理
+if !boil.TimestampsAreSkipped(ctx) {
+    currTime := time.Now().In(boil.GetLocation())
+
+    o.UpdatedAt = currTime
+}
+```
 
 ## 14. モデルをReloadする
 - モデルを再更新する時は、以下のようにかけます
