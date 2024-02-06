@@ -167,8 +167,8 @@ func GetUsersByUserIDs(ctx context.Context, db *sql.DB, userIDs []int64{}) ([]*m
 
 ```
 
-## 5. Eager Loadを共通化
-Eager Loadを使う時、共通化することで、コードの重複を減らすことができます。
+## 5. Eager Loadingを共通化
+取得時、Eager Loadingを共通化することで、コードの重複を減らすことができます。
 
 ```go
     func loadComment((s ...qm.QueryMod) []qm.QueryMod {
@@ -201,8 +201,8 @@ comments <-> users <-> teams
 ```
 
 外部キーで紐づくテーブルをLoadする時は、以下のように、ベースのテーブルを基準に取ってくるテーブルごとにLoad処理を書く必要があります。
-その際、qm.Relsを使うことで、型安全に書くことができます。  
-また、qm.Loadの第2引数以降には、Eager Loadする時の条件をかけたりします。
+その際、qm.Relsを使い、テーブルを繋げることでデータを引っ張ることができます。  
+また、qm.Loadの第2引数以降には、Eager Loadingする時の条件を書くことができます。
 
 ```go
     comment, err := model.Comments(
@@ -233,7 +233,7 @@ func (r *commentR) GetUser() *User {
 ```
 
 ## 7. ORを利用する時は、Or2とExprを利用する
-OR2は、ORの適応範囲を明確にするために、Exprで囲んで、影響範囲を絞ります。
+OR2は、ORの適応範囲を明確にするために、Exprで囲んで、影響範囲を絞ることができます
 
 ```go
 qms := []qm.QueryMod{
@@ -429,8 +429,9 @@ user := &model.User{ID: 1}
 teams ,err := user.Teams().All(ctx, db)
 ```
 
-## 11. モデルのスライスに対して、一括でeager loadする
-- 以下のように、一括でeager loadし、Teamをモデルに紐づけることができます。
+## 11. モデルのRに対して、データを紐づける
+- 以下のように、モデルのRに対して、後からデータを紐づけることができます。
+- スライス/単数のモデルどちらでも対応できるようになっています。
 ```go
 users := []*model.User{
     &model.User{ID: 1},
@@ -473,7 +474,7 @@ user.SetTeam(ctx, db, true, &model.Team{
 
 ## 13 カラム推論(boil.Columns)の使いわけ: boil.Infer, boil.Graylist, boil.Blacklist, boil.Whitelist
 Insert/Update/Upsertを呼び出す際に、挿入・更新すべきカラムを推論します。
-その時の挙動を制御するためのメソッドです。
+その時の推論する挙動を制御するためのメソッドです。
 
 | メソッド | 説明                                     |
 | --- |----------------------------------------|
@@ -482,7 +483,13 @@ Insert/Update/Upsertを呼び出す際に、挿入・更新すべきカラムを
 | Blacklist | Inferで選択されたカラムから、指定したカラムを除外します。        |
 | Greylist | Inferで選択されたカラムに合わせて、指定したカラムを追加します。     |
 
-※ `created_at`/`updated_at`カラムは、Insert(),Update()の際によしなに値がセットされるようになっています。
+```go
+user.Insert(ctx, db, boil.Infer())
+```
+
+### 特別なカラム
+`created_at`/`updated_at`カラムは、Insert(),Update()の際によしなに値がセットされるようになっています。
+
 ```go
 // Insertの内部処理
 if !boil.TimestampsAreSkipped(ctx) {
@@ -538,7 +545,7 @@ models.AddUserHook(boil.BeforeInsertHook, beforeInsertHook)
 ```
 
 ## 16 生成する命名を個別変更する
-sqlboiler.tomlに以下のように設定することで、生成されるモデル名を変更することができます。
+`sqlboiler.toml` に`aliases.tables`を設定することで、生成されるモデル名を変更することができます。
 
 ```toml
 [[aliases.tables]]
@@ -548,6 +555,7 @@ up_singular   = "UserPoms"
 down_plural   = "userPomses"
 down_singular = "userPoms"
 ```
+
 ## ハマりポイント1: 値がゼロ値の時にデフォルト値が優先されてしまう
 以下のようなカラムに対して、
 ```go
@@ -567,7 +575,7 @@ _ = user.Insert(ctx, db, boil.Infer())
 // user.IsTestTwo => false
 ```
 
-これは、`boil.Iner()`の仕様として、「非ゼロのデフォルト値を持つカラム+デフォルト値がないカラム」が選択されるためです。
+これは、`boil.Iner()`の仕様として、「非ゼロのデフォルト値を持つカラム+デフォルト値がないカラム」が選択されることが原因です。
 IsTestは、ゼロ値かつデフォルト値があるカラムなので、insert文には含まれず、デフォルト値がレコードに入ります。
 上記の場合は、WhiteListやGrayListを使って、値を更新するようにします。
 
