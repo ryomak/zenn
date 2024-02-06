@@ -14,6 +14,7 @@ READMEにも書かれていますが、意外と気づきづらい部分があ�
 
 ## 前提
 - MySQL
+- SQLBoiler v4.16.1
 - 生成したコードは`model`パッケージに配置されているとします
 - テーブルは以下を想定
 ```sql
@@ -493,47 +494,7 @@ users, err := model.Users(
 ).All(ctx, db)
 ```
 
-## 16. IN句を簡単にかけるような関数を作成する
-- IN句を使う時、スライスをそのまま渡すことができないため、スライスを渡すための関数を作成することで、簡単にIN句を使うことができます。
-
-
-```go
-type ArrayInt64 []int64
-
-func (ai ArrayInt64) IN() []interface{} {
-	values := make([]interface{}, 0, len(ai))
-	for _, value := range ai {
-		values = append(values, value)
-	}
-	return values
-}
-
-func (ai ArrayInt64) INString() string {
-	s := make([]string, len(ai))
-	for i, v := range ai {
-		s[i] = strconv.Itoa(int(v))
-	}
-	return strings.Join(s, ",")
-}
-```
-
-### 使い方
-```go
-func GetUsersByUserIDs(ctx context.Context, db *sql.DB, userIDs []int64{}) ([]*model.User, error) {
-    users, err := model.Users(
-	    qm.WhereIn("id IN ?", ArrayInt64(userIDs).IN()...),
-    ).All(ctx, db)
-}
-
-func GetUsersByUserIDs(ctx context.Context, db *sql.DB, userIDs []int64{}) ([]*model.User, error) {
-    users, err := model.Users(
-	    qm.Where(fmt.Sprintf("id IN (%s)", ArrayInt64(userIDs).INString())),
-    ).All(ctx, db)
-}
-
-```
-
-## 17. Eager Loadingを共通化する
+## 16. Eager Loadingを共通化する
 取得時、Eager Loadingを共通化することで、コードの重複を減らすことができます。
 また、Loadの抜け漏れがなくなるため、安全にデータを取ってくることができます。
 
