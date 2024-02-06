@@ -73,9 +73,9 @@ UserRels.Teams
 なるべく型で縛っておいた方が安全なので、(1)を使うことをおすすめしますが、ケースバイケースで使い分けることができます。
 ### (1) テーブルごとに生成されたコードを使ったクエリ
 ```go
-user, err := model.Users(
-	model.UserWhere.ID.EQ(1),
-).One(ctx, db)
+users, err := model.Users(
+	model.UserWhere.Name.EQ("taro"),
+).All(ctx, db)
 ```
 
 ### (2) クエリビルダーを使ったクエリ
@@ -559,7 +559,7 @@ var u userDetail
 model.Users(
     qm.Select("user.*, team.*"), 
     InnerJoin(model.TableNames.Team, model.TableNames.User, model.TeamColumns.ID, model.UserColumns.TeamID),
-).BindG(context.Background(), &u)
+).Bind(context.Background(), &u)
 fmt.Printf("userDetail = %+v\n", u)
 ```
 
