@@ -12,6 +12,7 @@ SQLBoilerの意外と気づかない使い方から、個人的にSQLBoilerを�
 
 ## 前提
 - MySQL
+- 生成したコードは`model`パッケージに配置されているとします
 - テーブルは以下を想定
 ```sql
 CREATE TABLE `teams` (
@@ -41,10 +42,29 @@ CREATE TABLE `comments` (
 生成されたコードには、テーブル名やカラム名が規則的に定義されています。
 そのため、生成された変数を使って、コードを書くことができます。
 
+- テーブル名
 ```go
-model.TableNames.Team
-model.TeamColumns.ID
-````
+// model.TableNames
+model.TableNames.User
+```
+
+- カラム名
+```go
+// model.{Model}Columns
+model.UserColumns.ID
+```
+
+- Where句
+```go
+// model.{Model}Where.{Column}.{Operator}
+model.UserWhere.ID.EQ(1)
+```
+- 外部キー
+```go
+// model.{Model}Rels
+UserRels.Teams
+```
+
 
 ## 2. クエリ構築のための3つのアプローチ
 なるべく型で縛っておいた方が安全なので、(1)を使うことをおすすめしますが、ケースバイケースで使い分けることができます。
@@ -397,6 +417,9 @@ if err != nil {
 
 boil.SetDB(db)
 boil.DebugMode = true
+// 出力先の変更
+fh, _ := os.Open("log.txt")
+boil.DebugWriter = fh
 ```
 
 ## 10. 特定のモデルに紐づくモデルを取得する
@@ -494,6 +517,17 @@ func beforeInsertHook(ctx context.Context, exec boil.ContextExecutor, u *User) e
 models.AddUserHook(boil.BeforeInsertHook, beforeInsertHook)
 ```
 
+## 16 生成する命名を個別変更する
+sqlboiler.tomlに以下のように設定することで、生成されるモデル名を変更することができます。
+
+```toml
+[[aliases.tables]]
+name          = "user_poms"
+up_plural     = "UserPomses"
+up_singular   = "UserPoms"
+down_plural   = "userPomses"
+down_singular = "userPoms"
+```
 ## ハマりポイント1: 値がゼロ値の時にデフォルト値が優先されてしまう
 以下のようなカラムに対して、
 ```go
