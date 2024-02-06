@@ -562,13 +562,14 @@ user.IsTestTwo = false
 
 _ = user.Insert(ctx, db, boil.Infer()) 
 
+// output
 // user.IsTest => true
 // user.IsTestTwo => false
 ```
 
-これは、`boil.Iner()`の「非ゼロのデフォルト値を持つカラム+デフォルト値がないカラム」が更新カラムとして、推論されるためです。　　
-IsTestは、ゼロ値かつデフォルト値があるカラムなので、更新されません。
-上記の場合は、WhiteListやGrayListを使って、値を必ず更新するようにしましょう。
+これは、`boil.Iner()`の仕様として、「非ゼロのデフォルト値を持つカラム+デフォルト値がないカラム」が選択されるためです。
+IsTestは、ゼロ値かつデフォルト値があるカラムなので、insert文には含まれず、デフォルト値がレコードに入ります。
+上記の場合は、WhiteListやGrayListを使って、値を更新するようにします。
 
 ## ハマりポイント.2: Bindで同じカラム名があるとうまく取得できない。
 
