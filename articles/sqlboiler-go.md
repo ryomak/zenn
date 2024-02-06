@@ -93,7 +93,46 @@ err := queries.Raw(
 ).Bind(ctx, db, &users)
 ```
 
-## 3. Joinを関数にしておく
+## 3 カラム推論(boil.Columns)の使いわけ: boil.Infer, boil.Graylist, boil.Blacklist, boil.Whitelist
+Insert/Update/Upsertを呼び出す際に、挿入・更新すべきカラムを推論します。
+その時の推論する挙動を制御するためのメソッドです。
+
+| メソッド | 説明                                     |
+| --- |----------------------------------------|
+| Infer | デフォルト値がないカラムと、非ゼロのデフォルト値を持つカラムが追加されます。 |
+| Whitelist | 指定したカラムのみ追加します。                        |
+| Blacklist | Inferで選択されたカラムから、指定したカラムを除外します。        |
+| Greylist | Inferで選択されたカラムに合わせて、指定したカラムを追加します。     |
+
+```go
+user.Insert(ctx, db, boil.Infer())
+```
+
+### 特別なカラム
+`created_at`/`updated_at`カラムは、デフォルトの設定だと、Insert(),Update()の際に、よしなに値がセットされるようになっています。
+
+```go
+// Insertの内部処理
+if !boil.TimestampsAreSkipped(ctx) {
+    currTime := time.Now().In(boil.GetLocation())
+
+    if o.CreatedAt.IsZero() {
+        o.CreatedAt = currTime
+    }
+    if o.UpdatedAt.IsZero() {
+        o.UpdatedAt = currTime
+    }
+}
+
+// Updateの内部処理
+if !boil.TimestampsAreSkipped(ctx) {
+    currTime := time.Now().In(boil.GetLocation())
+
+    o.UpdatedAt = currTime
+}
+```
+
+## 4. Joinを関数にしておく
 Joinを関数化しておくことで、生成されたコードに含まれるテーブルとカラムの変数を使って、Joinを書くことができます。
 
 ```go
@@ -127,7 +166,7 @@ users, err := model.Users(
 ).All(ctx, db)
 ```
 
-## 4. IN句を簡単にする
+## 5. IN句を簡単にする
 - IN句を使う時、スライスをそのまま渡すことができないため、スライスを渡すための関数を作成することで、簡単にIN句を使うことができます。
 
 
@@ -167,7 +206,7 @@ func GetUsersByUserIDs(ctx context.Context, db *sql.DB, userIDs []int64{}) ([]*m
 
 ```
 
-## 5. Eager Loadingを共通化
+## 6. Eager Loadingを共通化
 取得時、Eager Loadingを共通化することで、コードの重複を減らすことができます。
 
 ```go
@@ -195,24 +234,24 @@ func GetUsersByUserIDs(ctx context.Context, db *sql.DB, userIDs []int64{}) ([]*m
     user.R.GetTeam()
 ```
 
-### ちなみに
+### 取ってくるモデルを繋げて取りたい時の書き方
 ```
 comments <-> users <-> teams
 ```
 
-外部キーで紐づくテーブルをLoadする時は、以下のように、ベースのテーブルを基準に取ってくるテーブルごとにLoad処理を書く必要があります。
-その際、qm.Relsを使い、テーブルを繋げることでデータを引っ張ることができます。  
+外部キーで紐づくテーブルをLoadする時は、ベースのテーブルを基準に、取ってくるテーブルごとにLoad処理を書く必要があります。
+その際、qm.Relsを使うと、型安全でデータを取ってくることができます。
 また、qm.Loadの第2引数以降には、Eager Loadingする時の条件を書くことができます。
 
 ```go
     comment, err := model.Comments(
         qm.Load(model.CommentRels.Users), // コメントに紐づくユーザを取得
-        qm.Load(qm.Rels(model.CommentRels.Users,model.UserResl.Teams),model.TeamWhere.Name.NEQ("hoge")), // ユーザに紐づくチームを取得 
+        qm.Load(qm.Rels(model.CommentRels.Users,model.UserResl.Teams),model.TeamWhere.Name.NEQ("hoge")), // コメントをベースにユーザに紐づくチームを取得 
     ).One(ctx, a.conn)
 ```
 
 
-## 6. Loadしたオブジェクトを取ってくるときは、GetXXXを使う
+## 7. Loadしたオブジェクトを取ってくるときは、GetXXXを使う
 - Loadを使っていない時、Rがnilになるので、ぬるぽを防げます
 ```go
     comment, _ := model.Comments(
@@ -232,7 +271,7 @@ func (r *commentR) GetUser() *User {
 }
 ```
 
-## 7. ORを利用する時は、Or2とExprを利用する
+## 8. ORを利用する時は、Or2とExprを利用する
 OR2は、ORの適応範囲を明確にするために、Exprで囲んで、影響範囲を絞ることができます
 
 ```go
@@ -246,10 +285,10 @@ qms := []qm.QueryMod{
 // (user.id <> 1 or user.name = 'taro') 
 ```
 
-## 8. テンプレートを使って独自のメソッドを追加する
+## 9. テンプレートを使って独自のメソッドを追加する
 - テンプレート機能を使うことで、各モデルに独自の処理を追加できます。
 - 以下の例では、BulkInsertを追加しています。
-```[tpl] 99_bulk_insert.go.tpl
+```[gotemplate]
 {{- $alias := .Aliases.Table .Table.Name -}}
 {{- $schemaTable := .Table.Name | .SchemaTable}}
 
@@ -404,10 +443,10 @@ func (o UserSlice) InsertAll(ctx context.Context, exec boil.ContextExecutor, col
 ```
 
 ### ちなみに
-このテンプレート機能を使って、便利なメソッドを追加されているリポジトリがあるので、参考にしてください。
+このテンプレート機能を使って、便利なメソッドを追加されているリポジトリがあるので、ぜひ参考にしてください。
 https://github.com/tiendc/sqlboiler-extensions
 
-## 9. デバッグするために、実行されるSQLを確認する
+## 10. デバッグするために、実行されるSQLを確認する
 - 実行されたクエリを確認できます
 ```go
 db, err := sql.Open("mysql", source)
@@ -422,14 +461,14 @@ fh, _ := os.Open("log.txt")
 boil.DebugWriter = fh
 ```
 
-## 10. 特定のモデルに紐づくモデルを取得する
+## 11. 特定のモデルに紐づくモデルを取得する
 - Userに紐づくTeamを取得する場合は、以下のようにかけます
 ```go
 user := &model.User{ID: 1}
 teams ,err := user.Teams().All(ctx, db)
 ```
 
-## 11. モデルのRに対して、データを紐づける
+## 12. モデルのRに対して、データを紐づける
 - 以下のように、モデルのRに対して、後からデータを紐づけることができます。
 - スライス/単数のモデルどちらでも対応できるようになっています。
 ```go
@@ -448,7 +487,7 @@ for _ ,v := range users {
 }
 ```
 
-## 12 モデルに対してデータを追加する
+## 13 モデルに対してデータを追加する
 - モデルに対して紐づくモデルのデータを追加・更新時は、以下のようにかけます
 ```go
 
@@ -470,45 +509,6 @@ user.SetTeam(ctx, db, true, &model.Team{
     Name: "team",
 })
 
-```
-
-## 13 カラム推論(boil.Columns)の使いわけ: boil.Infer, boil.Graylist, boil.Blacklist, boil.Whitelist
-Insert/Update/Upsertを呼び出す際に、挿入・更新すべきカラムを推論します。
-その時の推論する挙動を制御するためのメソッドです。
-
-| メソッド | 説明                                     |
-| --- |----------------------------------------|
-| Infer | デフォルト値がないカラムと、非ゼロのデフォルト値を持つカラムが追加されます。 |
-| Whitelist | 指定したカラムのみ追加します。                        |
-| Blacklist | Inferで選択されたカラムから、指定したカラムを除外します。        |
-| Greylist | Inferで選択されたカラムに合わせて、指定したカラムを追加します。     |
-
-```go
-user.Insert(ctx, db, boil.Infer())
-```
-
-### 特別なカラム
-`created_at`/`updated_at`カラムは、Insert(),Update()の際によしなに値がセットされるようになっています。
-
-```go
-// Insertの内部処理
-if !boil.TimestampsAreSkipped(ctx) {
-    currTime := time.Now().In(boil.GetLocation())
-
-    if o.CreatedAt.IsZero() {
-        o.CreatedAt = currTime
-    }
-    if o.UpdatedAt.IsZero() {
-        o.UpdatedAt = currTime
-    }
-}
-
-// Updateの内部処理
-if !boil.TimestampsAreSkipped(ctx) {
-    currTime := time.Now().In(boil.GetLocation())
-
-    o.UpdatedAt = currTime
-}
 ```
 
 ## 14. モデルをReloadする
