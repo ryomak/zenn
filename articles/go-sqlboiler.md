@@ -238,12 +238,12 @@ OR2は、ORの適応範囲を明確にするために、Exprで囲んで、影�
 ```go
 qms := []qm.QueryMod{
     qm.Expr(
-        model.UserWhere.ID.EQ(1),
-        qm.Or2(model.UserWhere.ID.NEQ(3)),
+        model.UserWhere.ID.NEQ(1),
+        qm.Or2(model.UserWhere.Name.EQ("taro")),
     ),
 }
 
-// (user.id = 1 or user.id <> 3) 
+// (user.id <> 1 or user.name = 'taro') 
 ```
 
 ## 8. テンプレートを使って独自のメソッドを追加する
