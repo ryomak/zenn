@@ -577,7 +577,7 @@ _ = user.Insert(ctx, db, boil.Infer())
 
 これは、`boil.Iner()`の仕様として、「非ゼロのデフォルト値を持つカラム+デフォルト値がないカラム」が選択されることが原因です。
 IsTestは、ゼロ値かつデフォルト値があるカラムなので、insert文には含まれず、デフォルト値がレコードに入ります。
-上記の場合は、WhiteListやGrayListを使って、値を更新するようにします。
+上記ゼロ値でもデータを更新できるようにしたい場合は、WhiteListやGrayListを使って、明示的にカラムを指定する必要があります。
 
 ## ハマりポイント.2: Bindで同じカラム名があるとうまく取得できない。
 
@@ -600,6 +600,6 @@ https://github.com/volatiletech/sqlboiler/issues/664
 
 ## ハマりポイント.3: 複合キーを使う時のUpsert
 複合主キーでのテーブルでは、DBの種類によっての挙動の違いにより、Upsertは意図しない挙動になることがあります。
-複合主キー`Exists()`で存在の有無を確認してから、`Insert()`/`Update()`を使うことをおすすめします。
+複合主キーの場合は`Exists()`で存在の有無を確認してから、`Insert()`/`Update()`を使うことをおすすめします。
 
 https://github.com/volatiletech/sqlboiler/issues/328
