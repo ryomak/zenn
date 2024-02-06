@@ -7,8 +7,10 @@ published: true
 ---
 
 ## はじめに
+https://github.com/volatiletech/sqlboiler
 SQLBoilerは、スキーマに合わせたORMを生成するツールです。
-意外と気づかない使い方から、個人的におすすめTipsをまとめます。少しでも参考になれば幸いです。
+READMEにも書かれていますが、意外と気づきづらい部分があったりするので、使い方から、ちょっとしたTips、ハマりポイントをまとめます。  
+少しでも参考になれば幸いです。
 
 ## 前提
 - MySQL
@@ -132,126 +134,7 @@ if !boil.TimestampsAreSkipped(ctx) {
 }
 ```
 
-## 4. Joinを関数にしておく
-Joinを関数化しておくことで、生成されたコードに含まれるテーブルとカラムの変数を使って、Joinを書くことができます。
-
-```go
-func InnerJoin(joinTable, baseTable, joinTableColumn, baseTableColumn string) qm.QueryMod {
-	return qm.InnerJoin(fmt.Sprintf("%s ON %s.%s = %s.%s",
-		joinTable,
-		joinTable,
-		joinTableColumn,
-		baseTable,
-		baseTableColumn,
-	))
-}
-
-func LeftOuterJoin(joinTable, baseTable, joinTableColumn, baseTableColumn string) qm.QueryMod {
-	return qm.LeftOuterJoin(fmt.Sprintf("%s ON %s.%s = %s.%s",
-		joinTable,
-		joinTable,
-		joinTableColumn,
-		baseTable,
-		baseTableColumn,
-	))
-}
-
-```
-
-### 使い方
-```go
-users, err := model.Users(
-    InnerJoin(model.TableNames.Team, model.TableNames.User, model.TeamColumns.ID, model.UserColumns.TeamID), 
-    model.TeamWhere.ID.EQ(1),
-).All(ctx, db)
-```
-
-## 5. IN句を簡単にする
-- IN句を使う時、スライスをそのまま渡すことができないため、スライスを渡すための関数を作成することで、簡単にIN句を使うことができます。
-
-
-```go
-type ArrayInt64 []int64
-
-func (ai ArrayInt64) IN() []interface{} {
-	values := make([]interface{}, 0, len(ai))
-	for _, value := range ai {
-		values = append(values, value)
-	}
-	return values
-}
-
-func (ai ArrayInt64) INString() string {
-	s := make([]string, len(ai))
-	for i, v := range ai {
-		s[i] = strconv.Itoa(int(v))
-	}
-	return strings.Join(s, ",")
-}
-```
-
-### 使い方
-```go
-func GetUsersByUserIDs(ctx context.Context, db *sql.DB, userIDs []int64{}) ([]*model.User, error) {
-    users, err := model.Users(
-	    qm.WhereIn("id IN ?", ArrayInt64(userIDs).IN()...),
-    ).All(ctx, db)
-}
-
-func GetUsersByUserIDs(ctx context.Context, db *sql.DB, userIDs []int64{}) ([]*model.User, error) {
-    users, err := model.Users(
-	    qm.Where(fmt.Sprintf("id IN (%s)", ArrayInt64(userIDs).INString())),
-    ).All(ctx, db)
-}
-
-```
-
-## 6. Eager Loadingを共通化
-取得時、Eager Loadingを共通化することで、コードの重複を減らすことができます。
-
-```go
-    func loadComment((s ...qm.QueryMod) []qm.QueryMod {
-        return append(s, []qm.QueryMod{
-            qm.Load(qm.Rels(
-                model.CommentRels.Users,
-                model.UsersRels.Teams,
-            )),
-            qm.Load(model.CommentRels.Images),
-        }...)
-    }
-```
-
-### 使い方
-```go
-    comment, err := model.Comments(
-		loadComment(
-			model.CommentWhere.ID.EQ(1),
-		)...,
-	).One(ctx, a.conn)
-
-    // 以下のように、Loadしたオブジェクトを取ってくることができます
-    user := comment.R.GetUser()
-    user.R.GetTeam()
-```
-
-### 取ってくるモデルを繋げて取りたい時の書き方
-```
-comments <-> users <-> teams
-```
-
-外部キーで紐づくテーブルをLoadする時は、ベースのテーブルを基準に、取ってくるテーブルごとにLoad処理を書く必要があります。
-その際、qm.Relsを使うと、型安全でデータを取ってくることができます。
-また、qm.Loadの第2引数以降には、Eager Loadingする時の条件を書くことができます。
-
-```go
-    comment, err := model.Comments(
-        qm.Load(model.CommentRels.Users), // コメントに紐づくユーザを取得
-        qm.Load(qm.Rels(model.CommentRels.Users,model.UserResl.Teams),model.TeamWhere.Name.NEQ("hoge")), // コメントをベースにユーザに紐づくチームを取得 
-    ).One(ctx, a.conn)
-```
-
-
-## 7. Loadしたオブジェクトを取ってくるときは、GetXXXを使う
+## 4. Loadしたモデルを取ってくるときは、GetXXXを使う
 - Loadを使っていない時、Rがnilになるので、ぬるぽを防げます
 ```go
     comment, _ := model.Comments(
@@ -271,7 +154,26 @@ func (r *commentR) GetUser() *User {
 }
 ```
 
-## 8. ORを利用する時は、Or2とExprを利用する
+## 5. 外部キーで紐づくテーブルデータを芋蔓式に取りたい時の書き方
+```
+comments <-> users <-> teams
+```
+
+外部キーで紐づくテーブルをLoadする時は、ベースのテーブルを基準に、取ってくるテーブルごとにLoad処理を書く必要があります。
+その際、qm.Relsを使うと、型安全でデータを取ってくることができます。
+また、qm.Loadの第2引数以降には、Eager Loadingする時の条件を書くことができます。
+
+```go
+    comment, _ := model.Comments(
+        qm.Load(model.CommentRels.Users), // コメントに紐づくユーザを取得
+        qm.Load(qm.Rels(model.CommentRels.Users,model.UserResl.Teams),model.TeamWhere.Name.NEQ("hoge")), // コメントをベースにユーザに紐づくチームを取得 
+    ).One(ctx, a.conn)
+
+    user := comment.R.GetUser()
+    team := user.R.GetTeam()
+```
+
+## 6. クエリでORを利用する時は、Or2とExprを併用する
 OR2は、ORの適応範囲を明確にするために、Exprで囲んで、影響範囲を絞ることができます
 
 ```go
@@ -285,7 +187,7 @@ qms := []qm.QueryMod{
 // (user.id <> 1 or user.name = 'taro') 
 ```
 
-## 9. テンプレートを使って独自のメソッドを追加する
+## 7. テンプレートを使って独自のメソッドを追加する
 - テンプレート機能を使うことで、各モデルに独自の処理を追加できます。
 - 以下の例では、BulkInsertを追加しています。
 ```[gotemplate]
@@ -446,7 +348,7 @@ func (o UserSlice) InsertAll(ctx context.Context, exec boil.ContextExecutor, col
 このテンプレート機能を使って、便利なメソッドを追加されているリポジトリがあるので、ぜひ参考にしてください。
 https://github.com/tiendc/sqlboiler-extensions
 
-## 10. デバッグするために、実行されるSQLを確認する
+## 8. デバッグするために、実行されるSQLを確認する
 - 実行されたクエリを確認できます
 ```go
 db, err := sql.Open("mysql", source)
@@ -461,14 +363,14 @@ fh, _ := os.Open("log.txt")
 boil.DebugWriter = fh
 ```
 
-## 11. 特定のモデルに紐づくモデルを取得する
+## 9. 特定のモデルに紐づくモデルを取得する
 - Userに紐づくTeamを取得する場合は、以下のようにかけます
 ```go
 user := &model.User{ID: 1}
 teams ,err := user.Teams().All(ctx, db)
 ```
 
-## 12. モデルのRに対して、データを紐づける
+## 10. 特定のモデルに対して、後からデータを紐づける
 - 以下のように、モデルのRに対して、後からデータを紐づけることができます。
 - スライス/単数のモデルどちらでも対応できるようになっています。
 ```go
@@ -487,7 +389,7 @@ for _ ,v := range users {
 }
 ```
 
-## 13 モデルに対してデータを追加する
+## 11 モデルに対してデータを追加する
 - モデルに対して紐づくモデルのデータを追加・更新時は、以下のようにかけます
 ```go
 
@@ -511,14 +413,14 @@ user.SetTeam(ctx, db, true, &model.Team{
 
 ```
 
-## 14. モデルをReloadする
+## 12. モデルをReloadする
 - モデルを再更新する時は、以下のようにかけます
 ```go
 user := &model.User{ID: 1}
 _ = user.Reload(ctx, db)
 ```
 
-## 15. Hookを使って、共通処理を書く
+## 13. Hookを使って、共通処理を書く
 - 処理の前後に共通の処理を書くことができます。
 ```go
 const (
@@ -544,7 +446,7 @@ func beforeInsertHook(ctx context.Context, exec boil.ContextExecutor, u *User) e
 models.AddUserHook(boil.BeforeInsertHook, beforeInsertHook)
 ```
 
-## 16 生成する命名を個別変更する
+## 14. 生成する命名を個別変更する
 `sqlboiler.toml` に`aliases.tables`を設定することで、生成されるモデル名を変更することができます。
 
 ```toml
@@ -555,6 +457,112 @@ up_singular   = "UserPoms"
 down_plural   = "userPomses"
 down_singular = "userPoms"
 ```
+
+
+## 15. Joinを簡単にかけるような関数を作成する
+Joinを関数化しておくことで、生成されたコードに含まれるテーブルとカラムの変数を使って、Joinを書くことができます。
+
+```go
+func InnerJoin(joinTable, baseTable, joinTableColumn, baseTableColumn string) qm.QueryMod {
+	return qm.InnerJoin(fmt.Sprintf("%s ON %s.%s = %s.%s",
+		joinTable,
+		joinTable,
+		joinTableColumn,
+		baseTable,
+		baseTableColumn,
+	))
+}
+
+func LeftOuterJoin(joinTable, baseTable, joinTableColumn, baseTableColumn string) qm.QueryMod {
+	return qm.LeftOuterJoin(fmt.Sprintf("%s ON %s.%s = %s.%s",
+		joinTable,
+		joinTable,
+		joinTableColumn,
+		baseTable,
+		baseTableColumn,
+	))
+}
+
+```
+
+### 使い方
+```go
+users, err := model.Users(
+    InnerJoin(model.TableNames.Team, model.TableNames.User, model.TeamColumns.ID, model.UserColumns.TeamID), 
+    model.TeamWhere.ID.EQ(1),
+).All(ctx, db)
+```
+
+## 16. IN句を簡単にかけるような関数を作成する
+- IN句を使う時、スライスをそのまま渡すことができないため、スライスを渡すための関数を作成することで、簡単にIN句を使うことができます。
+
+
+```go
+type ArrayInt64 []int64
+
+func (ai ArrayInt64) IN() []interface{} {
+	values := make([]interface{}, 0, len(ai))
+	for _, value := range ai {
+		values = append(values, value)
+	}
+	return values
+}
+
+func (ai ArrayInt64) INString() string {
+	s := make([]string, len(ai))
+	for i, v := range ai {
+		s[i] = strconv.Itoa(int(v))
+	}
+	return strings.Join(s, ",")
+}
+```
+
+### 使い方
+```go
+func GetUsersByUserIDs(ctx context.Context, db *sql.DB, userIDs []int64{}) ([]*model.User, error) {
+    users, err := model.Users(
+	    qm.WhereIn("id IN ?", ArrayInt64(userIDs).IN()...),
+    ).All(ctx, db)
+}
+
+func GetUsersByUserIDs(ctx context.Context, db *sql.DB, userIDs []int64{}) ([]*model.User, error) {
+    users, err := model.Users(
+	    qm.Where(fmt.Sprintf("id IN (%s)", ArrayInt64(userIDs).INString())),
+    ).All(ctx, db)
+}
+
+```
+
+## 17. Eager Loadingを共通化する
+取得時、Eager Loadingを共通化することで、コードの重複を減らすことができます。
+また、Loadの抜け漏れがなくなるため、安全にデータを取ってくることができます。
+
+```go
+    func loadComment((s ...qm.QueryMod) []qm.QueryMod {
+        return append(s, []qm.QueryMod{
+            qm.Load(qm.Rels(
+                model.CommentRels.Users,
+                model.UsersRels.Teams,
+            )),
+            qm.Load(model.CommentRels.Images),
+        }...)
+    }
+```
+
+### 使い方
+```go
+    comment, err := model.Comments(
+		loadComment(
+			model.CommentWhere.ID.EQ(1),
+		)...,
+	).One(ctx, a.conn)
+
+    // 以下のように、Loadしたオブジェクトを取ってくることができます
+    user := comment.R.GetUser()
+    user.R.GetTeam()
+```
+
+
 
 ## ハマりポイント1: 値がゼロ値の時にデフォルト値が優先されてしまう
 以下のようなカラムに対して、
@@ -603,3 +611,4 @@ https://github.com/volatiletech/sqlboiler/issues/664
 複合主キーの場合は`Exists()`で存在の有無を確認してから、`Insert()`/`Update()`を使うことをおすすめします。
 
 https://github.com/volatiletech/sqlboiler/issues/328
+
