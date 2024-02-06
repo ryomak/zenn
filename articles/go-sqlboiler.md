@@ -1,5 +1,5 @@
 ---
-title: "SQLBoilerの意外と気づかない使い方~ちょっとしたTips"
+title: "SQLBoilerのちょっとしたTips集"
 emoji: "🗄️"
 type: "tech" 
 topics: ["Go","SQLBoiler"]
@@ -8,7 +8,7 @@ published: true
 
 ## はじめに
 SQLBoilerは、スキーマに合わせたORMを生成するツールです。
-SQLBoilerの意外と気づかない使い方から、個人的にSQLBoilerを使っている中で見つけたちょっとしたTipsをまとめます。少しでも参考になれば幸いです。
+SQLBoilerの意外と気づかない使い方から、個人的におすすめTipsをまとめます。少しでも参考になれば幸いです。
 
 ## 前提
 - MySQL
