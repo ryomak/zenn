@@ -79,8 +79,8 @@ user, err := model.Users(
 ```go
 var users []*model.User
 if := model.NewQuery(
-    qm.From(model.TableNames.User),
-	qm.Where(model.UserColumns.Name+" = ?", "taro"),
+    qm.From(model.TableNames.User), 
+    qm.Where(model.UserColumns.Name+" = ?", "taro"),
 ).Bind(ctx, db, &users)
 ```
 
