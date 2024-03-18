@@ -52,7 +52,7 @@ docker-compose.yml
 version: '3.4'
 services:
   weaviate:
-    image: semitechnologies/weaviate:1.19.9
+    image: cr.weaviate.io/semitechnologies/weaviate:1.19.9
     ports:
       - 8080:8080
     environment:
