@@ -1,5 +1,5 @@
 ---
-title: "Goでスタックトレースを持つエラーライブラリを実装した"
+title: "Goでスタックトレースを持つエラーハンドリングライブラリを実装した"
 emoji: "🐝"
 type: "tech" 
 topics: ["Go","Sentry"]
@@ -17,8 +17,7 @@ https://methane.hatenablog.jp/entry/2024/04/02/Go%E3%81%AEerror%E3%81%8C%E3%82%B
 [https://github.com/morikuni/failure](https://github.com/morikuni/failure)
 [https://github.com/cockroachdb/errors](https://github.com/cockroachdb/errors)
 
-
-今回はカスタムしなくても良い感じにエラーを整形して、Sentryで確認したいと思い、 
+今回はカスタムしなくても、良い感じにエラーを整形してSentryに送信できるライブラリがあればいいなと思い、
 自分が欲しい機能のみを搭載したシンプルなエラーハンドリングライブラリを作りました。
 
 独自エラーを作ってハンドリングしている方の参考になれば幸いです。
@@ -205,7 +204,7 @@ func (s *simpleError) printerFormat(p printer) error {
 
 ### SentryでWrapしたerrorからスタックトレースを出力する
 sentry-goでは、スタックトレースを出力するために、`sentry.ExtractStacktrace`を使っています。
-内部では、以下のように決め打ちでメソッドを呼び出しています。
+内部的に特定のライブラリを前提として決め打ちでメソッドを呼び出そうとします。
 https://github.com/getsentry/sentry-go/blob/master/stacktrace.go#L83-L87
 ```go
     // https://github.com/pkg/errors
@@ -215,7 +214,7 @@ https://github.com/getsentry/sentry-go/blob/master/stacktrace.go#L83-L87
 	}
 ```
 
-上記のメソッドが呼ばれるように、simpleErrorにもStackTraceメソッドを実装しています。
+今回は、上記メソッドが呼ばれるように、simpleErrorに、StackTraceメソッドを実装しています。
 ```go
 func (s *simpleError) StackTrace() pkgErrors.StackTrace {
 
@@ -234,7 +233,6 @@ func (s *simpleError) StackTrace() pkgErrors.StackTrace {
 
 ### Sentryへ送信するイベントの生成
 ```go
-// GenerateSentryEvent is a method to generate a sentry event from an error
 func GenerateSentryEvent(err error, ws ...sentryWrapper) *sentry.Event {
 	if err == nil {
 		return nil
@@ -270,5 +268,6 @@ func GenerateSentryEvent(err error, ws ...sentryWrapper) *sentry.Event {
 
 ## まとめ
 シンプルなエラーハンドリングライブラリを作成しました。
+
 車輪の再開発感は否めないですが、独自エラーを利用しているプロダクトも一定数あるかと思うので、Sentryへのエラー出力や
-スタックトレースの管理で悩まれている方にとって 少しでも参考になれば幸いです。
+独自エラーでスタックトレースを管理したいと思っている方の参考になれば幸いです。
