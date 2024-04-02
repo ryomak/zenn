@@ -1,5 +1,5 @@
 ---
-title: "Goでスタックトレースを持つエラーハンドリングライブラリを実装した"
+title: "Goでいい感じに整形したエラーをSentryに送ることができるエラーハンドリングライブラリを実装した"
 emoji: "🐝"
 type: "tech" 
 topics: ["Go","Sentry"]
@@ -13,7 +13,7 @@ Goにはエラー処理を行うための標準パッケージがありますが
 https://methane.hatenablog.jp/entry/2024/04/02/Go%E3%81%AEerror%E3%81%8C%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E3%82%92%E5%90%AB%E3%81%BE%E3%81%AA%E3%81%84%E7%90%86%E7%94%B1
 
 スタックトレース有りの便利なライブラリはいくつかあります。
-個人的にアプリケーションを作る時は、シンプルなfailureを使うことが多いです。
+Sentryを使わない個人的なアプリケーションを作る時は、シンプルなfailureを使うことが多いです。
 [https://github.com/morikuni/failure](https://github.com/morikuni/failure)
 [https://github.com/cockroachdb/errors](https://github.com/cockroachdb/errors)
 
@@ -31,7 +31,7 @@ https://methane.hatenablog.jp/entry/2024/04/02/Go%E3%81%AEerror%E3%81%8C%E3%82%B
 ## 完成したライブラリ
 https://github.com/ryomak/serrs
 
-## 使い方
+## 使い方紹介
 ### エラーの作成
 Codeとメッセージでエラーを作成できます
 ```go
@@ -204,7 +204,7 @@ func (s *simpleError) printerFormat(p printer) error {
 
 ### SentryでWrapしたerrorからスタックトレースを出力する
 sentry-goでは、スタックトレースを出力するために、`sentry.ExtractStacktrace`を使っています。
-内部的に特定のライブラリを前提として決め打ちでメソッドを呼び出そうとします。
+内部的には特定のライブラリのエラーを前提として決め打ちでメソッドを呼び出そうとします。
 https://github.com/getsentry/sentry-go/blob/master/stacktrace.go#L83-L87
 ```go
     // https://github.com/pkg/errors
