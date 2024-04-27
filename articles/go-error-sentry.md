@@ -21,14 +21,13 @@ Goのアプリケーションで独自エラー情報を整形してSentryに送
 Goではデフォルトでエラーにスタックトレースが付与されません。
 そのため、独自エラーやエラーハンドリングライブラリを使ってスタックトレースを管理する必要があります。
 
-スタックトレースが付与される便利なライブラリはいくつかあります。
+スタックトレースを付与できる便利なライブラリはいくつかあります。
+個人的に`failure`は使いやすくて好きです。
 [https://github.com/morikuni/failure](https://github.com/morikuni/failure)
 [https://github.com/cockroachdb/errors](https://github.com/cockroachdb/errors)
 
-これらのライブラリを使うと、簡単にエラーにスタックトレースを追加できます。
-個人的に`failure`は使いやすくて好きです。
 
-ちなみに独自エラーを作成している場合は、`runtime.Callers`を使ってプログラムカウンターを取得して、`runtime.CallersFrames`を使って関数の情報を取得できます。
+独自エラーでスタックトレースを持たせる場合は、`runtime.Callers`を使ってプログラムカウンターを取得して、`runtime.CallersFrames`を使って関数の情報を取得できます。
 この関数の情報をエラーに保存しておき、スタックトレースとして出力します。
 
 ```go
@@ -59,6 +58,7 @@ func (f Frame) location() (function, file string, line int) {
 type customError struct {
 	message string
 
+	// 根本のエラー
 	cause error
 
 	// 埋め込んでおく
@@ -115,7 +115,7 @@ func extractReflectedStacktraceMethod(err error) reflect.Value {
 
 今回は `StackTrace` メソッドを実装して、エラーからスタックトレースを取得できるようにしてみます 
 ```go
-type customeError struct {
+type customError struct {
     message string
     frame Frame
 }
@@ -171,7 +171,7 @@ sentry.CaptureEvent(event)
 ## 作ってみた
 https://github.com/ryomak/serrs
 Sentryにエラーを送信できる独自エラーを作ってみました。
-morikuniさんの `failure`を参考にさせていただきました。
+
 ### エラーの初期化
 ```go
 var InvalidParameterError = serrs.New(serrs.DefaultCode("invalid_parameter"),"invalid parameter error")
