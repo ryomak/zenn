@@ -7,7 +7,7 @@ published: true
 ---
 
 ## はじめに
-Go版のLangChainとWeaviateというVectorStoreを使って、Q&A機能を実装しました。
+Go版のLangChain(非公式)とWeaviateというVectorStoreを使って、Q&A機能を実装しました。
 
 
 ## 利用するリポジトリ
